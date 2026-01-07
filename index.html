@@ -21,7 +21,6 @@
             border: 2px dashed #667eea; border-radius: 10px; padding: 40px; text-align: center;
             margin-bottom: 30px; transition: all 0.3s ease; cursor: pointer; 
         }
-        .upload-area:hover { border-color: #764ba2; background-color: #f8f9ff; }
         .upload-icon { font-size: 48px; color: #667eea; margin-bottom: 10px; }
         input[type="file"] { display: none; }
         .options { margin-bottom: 30px; }
@@ -42,6 +41,24 @@
             width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 600;
             cursor: pointer; transition: all 0.3s ease; 
+        }
+        .precise-position-control {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .precise-position-control label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .precise-position-control input {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px;
+            font-size: 14px;
         }
         .result { display: none; text-align: center; margin-top: 20px; padding: 20px; background: #f8f9ff; border-radius: 10px; }
         .download-btn { 
@@ -68,6 +85,7 @@
                     <option value="第1页, 第2页, 第3页...">第1页, 第2页, 第3页...</option>
                     <option value="Page 1, Page 2, Page 3...">Page 1, Page 2, Page 3...</option>
                     <option value="- 1 -, - 2 -, - 3 -...">- 1 -, - 2 -, - 3 -...</option>
+                    <option value="0001, 0002, 0003...">0001, 0002, 0003...</option>
                 </select>
             </div>
 
@@ -83,6 +101,35 @@
                         <option value="Times-Roman">Times New Roman</option>
                         <option value="Courier">Courier</option>
                     </select>
+                </div>
+            </div>
+
+            <div class="option-group">
+                <label>页码位置</label>
+                <div class="position-options">
+                    <button class="position-btn" data-position="bottom-center">底部居中</button>
+                    <button class="position-btn" data-position="bottom-left">底部左侧</button>
+                    <button class="position-btn active" data-position="bottom-right">底部右侧</button>
+                    <button class="position-btn" data-position="top-center">顶部居中</button>
+                    <button class="position-btn" data-position="top-left">顶部左侧</button>
+                    <button class="position-btn" data-position="top-right">顶部右侧</button>
+                </div>
+            </div>
+
+            <!-- 新增精确位置控制 -->
+            <div class="option-group">
+                <label>精确位置设置</label>
+                <div class="precise-position-control">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label for="marginBottom">下边距 (cm)</label>
+                            <input type="number" id="marginBottom" value="1.06" step="0.01" min="0" max="5">
+                        </div>
+                        <div>
+                            <label for="marginRight">右边距 (cm)</label>
+                            <input type="number" id="marginRight" value="0.92" step="0.01" min="0" max="5">
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -111,9 +158,10 @@
     </div>
 
     <script>
+        // 完整JavaScript代码（包含所有升级功能）
         let pdfDoc = null;
         let selectedFile = null;
-        let pagePosition = 'bottom-center';
+        let pagePosition = 'bottom-right'; // 默认右下角
 
         // 文件上传处理
         const uploadArea = document.getElementById('uploadArea');
@@ -142,6 +190,15 @@
             handleFile(e.dataTransfer.files[0]);
         });
 
+        // 位置选择
+        document.querySelectorAll('.position-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.position-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                pagePosition = btn.dataset.position;
+            });
+        });
+
         // 处理文件
         async function handleFile(file) {
             if (!file || file.type !== 'application/pdf') {
@@ -153,12 +210,15 @@
             uploadArea.innerHTML = `<p>已选择文件: ${file.name}</p>`;
             options.style.display = 'block';
 
-            // 预览第一页
-            const arrayBuffer = await file.arrayBuffer();
-            pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+            } catch (error) {
+                alert('处理PDF时出错：' + error.message);
+            }
         }
 
-        // 处理PDF
+        // 处理按钮点击
         document.getElementById('processBtn').addEventListener('click', async () => {
             if (!pdfDoc) {
                 alert('请先上传PDF文件！');
@@ -178,6 +238,8 @@
                 const fontColor = document.getElementById('fontColor').value || '#000000';
                 const startPage = parseInt(document.getElementById('startPage').value);
                 const startFromPage = parseInt(document.getElementById('startFromPage').value) - 1;
+                const marginBottom = parseFloat(document.getElementById('marginBottom').value) * 28.35; // cm to points
+                const marginRight = parseFloat(document.getElementById('marginRight').value) * 28.35; // cm to points
 
                 const newPdfDoc = await PDFLib.PDFDocument.create();
                 const pages = pdfDoc.getPages();
@@ -206,53 +268,51 @@
                             case '- 1 -, - 2 -, - 3 -...':
                                 pageText = `- ${pageNumber} -`;
                                 break;
+                            case '0001, 0002, 0003...':
+                                pageText = pageNumber.toString().padStart(4, '0');
+                                break;
                         }
 
-                        // 计算位置
                         let x, y;
-                        const margin = 50;
                         
                         switch(pagePosition) {
+                            case 'bottom-right':
+                                x = width - marginRight;
+                                y = marginBottom;
+                                break;
                             case 'bottom-center':
                                 x = width / 2;
-                                y = margin;
+                                y = marginBottom;
                                 break;
                             case 'bottom-left':
-                                x = margin;
-                                y = margin;
-                                break;
-                            case 'bottom-right':
-                                x = width - margin;
-                                y = margin;
+                                x = marginRight;
+                                y = marginBottom;
                                 break;
                             case 'top-center':
                                 x = width / 2;
-                                y = height - margin;
+                                y = height - marginBottom;
                                 break;
                             case 'top-left':
-                                x = margin;
-                                y = height - margin;
+                                x = marginRight;
+                                y = height - marginBottom;
                                 break;
                             case 'top-right':
-                                x = width - margin;
-                                y = height - margin;
+                                x = width - marginRight;
+                                y = height - marginBottom;
                                 break;
                         }
 
-                        // 添加页码
                         currentPage.drawText(pageText, {
                             x: x,
                             y: y,
                             size: fontSize,
                             font: await newPdfDoc.embedFont(fontFamily),
                             color: hexToRgb(fontColor),
-                            textAnchor: pagePosition.includes('center') ? 'middle' : 
-                                       pagePosition.includes('left') ? 'start' : 'end',
+                            textAnchor: pagePosition.includes('center') ? 'middle' : 'end',
                         });
                     }
                 }
 
-                // 生成新的PDF
                 const pdfBytes = await newPdfDoc.save();
                 const blob = new Blob([pdfBytes], { type: 'application/pdf' });
                 const url = URL.createObjectURL(blob);
@@ -264,13 +324,12 @@
                 result.style.display = 'block';
 
             } catch (error) {
-                console.error('处理PDF时出错:', error);
-                alert('处理PDF时出错，请重试！');
+                console.error('处理失败:', error);
+                alert('处理PDF时出错：' + error.message);
                 loading.style.display = 'none';
             }
         });
 
-        // 颜色转换函数
         function hexToRgb(hex) {
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
