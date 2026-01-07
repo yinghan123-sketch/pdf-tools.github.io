@@ -31,18 +31,6 @@
             border-radius: 8px; font-size: 16px; 
         }
         .font-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .position-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .position-btn { 
-            padding: 10px; border: 2px solid #ddd; border-radius: 8px; 
-            background: white; cursor: pointer; transition: all 0.3s ease; text-align: center; 
-        }
-        .position-btn.active { background: #667eea; color: white; border-color: #667eea; }
-        .process-btn { 
-            width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 600;
-            cursor: pointer; transition: all 0.3s ease; 
-        }
-        /* 新增颜色选择器样式 */
         .color-picker-wrapper {
             display: flex;
             align-items: center;
@@ -55,6 +43,17 @@
             border-radius: 8px;
             cursor: pointer;
             padding: 0;
+        }
+        .position-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .position-btn { 
+            padding: 10px; border: 2px solid #ddd; border-radius: 8px; 
+            background: white; cursor: pointer; transition: all 0.3s ease; text-align: center; 
+        }
+        .position-btn.active { background: #667eea; color: white; border-color: #667eea; }
+        .process-btn { 
+            width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease; 
         }
         .precise-position-control {
             background: #f8f9ff;
@@ -106,7 +105,6 @@
                 </div>
             </div>
 
-            <!-- 修复：添加缺失的颜色选择器 -->
             <div class="option-group">
                 <label>字体颜色</label>
                 <div class="color-picker-wrapper">
@@ -168,184 +166,338 @@
     </div>
 
     <script>
-        // JavaScript代码保持不变（已经包含了所有功能）
+        // 完整的防御性编程版本
         let pdfDoc = null;
         let selectedFile = null;
         let pagePosition = 'bottom-right';
 
-        // 文件上传处理
+        // 文件上传处理 - 防御性编程版本
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         const options = document.getElementById('options');
 
-        uploadArea.addEventListener('click', () => fileInput.click());
+        // ✅ 安全的事件绑定
+        uploadArea?.addEventListener('click', () => fileInput?.click());
 
-        fileInput.addEventListener('change', (e) => {
-            handleFile(e.target.files[0]);
+        fileInput?.addEventListener('change', (e) => {
+            handleFile(e?.target?.files?.[0]);
         });
 
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
+        // 拖拽上传 - 安全版本
+        uploadArea?.addEventListener('dragover', (e) => {
+            e?.preventDefault?.();
+            uploadArea?.classList?.add('dragover');
         });
 
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
+        uploadArea?.addEventListener('dragleave', () => {
+            uploadArea?.classList?.remove('dragover');
         });
 
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            handleFile(e.dataTransfer.files[0]);
+        uploadArea?.addEventListener('drop', (e) => {
+            e?.preventDefault?.();
+            uploadArea?.classList?.remove('dragover');
+            handleFile(e?.dataTransfer?.files?.[0]);
         });
 
-        // 位置选择
-        document.querySelectorAll('.position-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.position-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                pagePosition = btn.dataset.position;
+        // 位置选择 - 安全版本
+        document.querySelectorAll('.position-btn')?.forEach(btn => {
+            btn?.addEventListener('click', () => {
+                document.querySelectorAll('.position-btn')?.forEach(b => b?.classList?.remove('active'));
+                btn?.classList?.add('active');
+                pagePosition = btn?.dataset?.position ?? 'bottom-right';
             });
         });
 
+        // 处理文件 - 全面防御性编程版本
         async function handleFile(file) {
-            if (!file || file.type !== 'application/pdf') {
-                alert('请选择PDF文件！');
-                return;
-            }
-
-            selectedFile = file;
-            uploadArea.innerHTML = `<p>已选择文件: ${file.name}</p>`;
-            options.style.display = 'block';
-
+            console.log('=== 开始处理文件 ===');
+            
             try {
-                const arrayBuffer = await file.arrayBuffer();
+                // ✅ 使用可选链和空值合并进行防御性检查
+                if (!file ?? file?.type !== 'application/pdf') {
+                    console.error('❌ 文件验证失败:', file);
+                    alert('请选择有效的PDF文件！');
+                    return;
+                }
+                
+                const fileSize = file?.size ?? 0;
+                const fileType = file?.type ?? 'unknown';
+                
+                console.log('文件信息:', {
+                    name: file?.name ?? 'unknown',
+                    type: fileType,
+                    size: fileSize
+                });
+                
+                // 文件大小检查
+                const maxSize = 50 * 1024 * 1024; // 50MB
+                if (fileSize > maxSize) {
+                    alert(`文件过大！最大支持50MB，当前文件: ${(fileSize / 1024 / 1024).toFixed(2)}MB`);
+                    return;
+                }
+                
+                selectedFile = file;
+                
+                // ✅ 安全更新UI - 防御性DOM操作
+                const uploadAreaElement = document.getElementById('uploadArea');
+                if (uploadAreaElement) {
+                    uploadAreaElement.innerHTML = `<p>已选择文件: ${file?.name ?? 'unknown'}</p>`;
+                }
+                
+                const optionsElement = document.getElementById('options');
+                if (optionsElement) {
+                    optionsElement.style.display = 'block';
+                }
+                
+                // ✅ 安全读取文件
+                const arrayBuffer = await file?.arrayBuffer?.();
+                if (!arrayBuffer) {
+                    throw new Error('无法读取文件内容');
+                }
+                
+                console.log('文件读取成功，大小:', arrayBuffer.byteLength);
+                
+                // ✅ 安全加载PDF
                 pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                console.log('✅ PDF加载成功，页数:', pdfDoc.getPageCount());
+                
             } catch (error) {
-                alert('处理PDF时出错：' + error.message);
+                console.error('❌ 文件处理失败:', error);
+                console.error('错误堆栈:', error.stack);
+                
+                let errorMessage = '处理文件时出错：\n';
+                
+                if (error.message.includes('Invalid PDF header')) {
+                    errorMessage += '文件不是有效的PDF格式';
+                } else if (error.message.includes('encrypted')) {
+                    errorMessage += 'PDF文件已加密，无法处理';
+                } else if (error.message.includes('Network')) {
+                    errorMessage += '网络错误，请检查网络连接';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                alert(errorMessage);
+                
+                // 重置状态
+                pdfDoc = null;
+                selectedFile = null;
             }
         }
 
-        document.getElementById('processBtn').addEventListener('click', async () => {
-            if (!pdfDoc) {
-                alert('请先上传PDF文件！');
-                return;
-            }
-
-            const loading = document.getElementById('loading');
-            const result = document.getElementById('result');
+        // 处理按钮点击 - 全面防御性编程版本
+        document.getElementById('processBtn')?.addEventListener('click', async () => {
+            console.log('=== 开始添加页码 ===');
             
-            loading.style.display = 'block';
-            result.style.display = 'none';
-
             try {
-                // 修复：添加防御性编程，防止空值
-                const format = document.getElementById('pageNumberFormat').value;
-                const fontSize = parseInt(document.getElementById('fontSize').value);
-                const fontFamily = document.getElementById('fontFamily').value;
+                // ✅ 全面防御性检查
+                if (!pdfDoc) {
+                    alert('请先上传PDF文件！');
+                    return;
+                }
+                
+                const loading = document.getElementById('loading');
+                const result = document.getElementById('result');
+                
+                if (loading) loading.style.display = 'block';
+                if (result) result.style.display = 'none';
+                
+                console.log('获取设置参数...');
+                
+                // ✅ 使用可选链和空值合并获取所有参数
+                const format = document.getElementById('pageNumberFormat')?.value ?? '1, 2, 3...';
+                const fontSize = parseInt(document.getElementById('fontSize')?.value ?? '12');
+                const fontFamily = document.getElementById('fontFamily')?.value ?? 'Helvetica';
+                
+                // 关键修复：使用多层防御获取颜色
                 const fontColorElement = document.getElementById('fontColor');
-                const fontColor = fontColorElement ? fontColorElement.value : '#000000'; // ✅ 防御性编程
-                const startPage = parseInt(document.getElementById('startPage').value);
-                const startFromPage = parseInt(document.getElementById('startFromPage').value) - 1;
-                const marginBottom = parseFloat(document.getElementById('marginBottom').value) * 28.35;
-                const marginRight = parseFloat(document.getElementById('marginRight').value) * 28.35;
-
+                const fontColor = fontColorElement?.value ?? 
+                                 (document.querySelector('input[type="color"]')?.value ?? '#000000');
+                
+                const startPage = parseInt(document.getElementById('startPage')?.value ?? '1');
+                const startFromPage = parseInt(document.getElementById('startFromPage')?.value ?? '1') - 1;
+                
+                // 精确位置控制 - 使用可选链
+                const marginBottom = parseFloat(document.getElementById('marginBottom')?.value ?? '1.06') * 28.35;
+                const marginRight = parseFloat(document.getElementById('marginRight')?.value ?? '0.92') * 28.35;
+                
+                console.log('参数汇总:', {
+                    format, fontSize, fontFamily, fontColor, 
+                    startPage, startFromPage, marginBottom, marginRight
+                });
+                
+                // ✅ 参数验证
+                if (!format || fontSize < 1 || fontSize > 100) {
+                    throw new Error('无效的字体大小设置');
+                }
+                
+                if (startPage < 1 || startFromPage < 0) {
+                    throw new Error('无效的页码设置');
+                }
+                
+                console.log('创建新PDF文档...');
                 const newPdfDoc = await PDFLib.PDFDocument.create();
                 const pages = pdfDoc.getPages();
-
+                
+                console.log(`开始处理 ${pages.length} 页...`);
+                
+                // ✅ 逐页处理，每页都有错误捕获
                 for (let i = 0; i < pages.length; i++) {
-                    const [copiedPage] = await newPdfDoc.copyPages(pdfDoc, [i]);
-                    newPdfDoc.addPage(copiedPage);
-
-                    if (i >= startFromPage) {
-                        const currentPage = newPdfDoc.getPages()[i];
-                        const { width, height } = currentPage.getSize();
+                    try {
+                        console.log(`处理第 ${i + 1} 页...`);
                         
-                        let pageNumber = i + startPage - startFromPage;
-                        let pageText = '';
-
-                        switch(format) {
-                            case '1, 2, 3...':
-                                pageText = pageNumber.toString();
-                                break;
-                            case '第1页, 第2页, 第3页...':
-                                pageText = `第${pageNumber}页`;
-                                break;
-                            case 'Page 1, Page 2, Page 3...':
-                                pageText = `Page ${pageNumber}`;
-                                break;
-                            case '- 1 -, - 2 -, - 3 -...':
-                                pageText = `- ${pageNumber} -`;
-                                break;
-                            case '0001, 0002, 0003...':
-                                pageText = pageNumber.toString().padStart(4, '0');
-                                break;
-                        }
-
-                        let x, y;
+                        const [copiedPage] = await newPdfDoc.copyPages(pdfDoc, [i]);
+                        newPdfDoc.addPage(copiedPage);
                         
-                        switch(pagePosition) {
-                            case 'bottom-right':
-                                x = width - marginRight;
-                                y = marginBottom;
-                                break;
-                            case 'bottom-center':
-                                x = width / 2;
-                                y = marginBottom;
-                                break;
-                            case 'bottom-left':
-                                x = marginRight;
-                                y = marginBottom;
-                                break;
-                            case 'top-center':
-                                x = width / 2;
-                                y = height - marginBottom;
-                                break;
-                            case 'top-left':
-                                x = marginRight;
-                                y = height - marginBottom;
-                                break;
-                            case 'top-right':
-                                x = width - marginRight;
-                                y = height - marginBottom;
-                                break;
+                        if (i >= startFromPage) {
+                            const currentPage = newPdfDoc.getPages()[i];
+                            const { width, height } = currentPage.getSize();
+                            
+                            let pageNumber = i + startPage - startFromPage;
+                            let pageText = '';
+                            
+                            // ✅ 安全的页码格式生成
+                            switch(format) {
+                                case '1, 2, 3...':
+                                    pageText = pageNumber.toString();
+                                    break;
+                                case '第1页, 第2页, 第3页...':
+                                    pageText = `第${pageNumber}页`;
+                                    break;
+                                case 'Page 1, Page 2, Page 3...':
+                                    pageText = `Page ${pageNumber}`;
+                                    break;
+                                case '- 1 -, - 2 -, - 3 -...':
+                                    pageText = `- ${pageNumber} -`;
+                                    break;
+                                case '0001, 0002, 0003...':
+                                    pageText = pageNumber.toString().padStart(4, '0');
+                                    break;
+                                default:
+                                    pageText = pageNumber.toString();
+                            }
+                            
+                            console.log(`第 ${i + 1} 页添加页码: ${pageText}`);
+                            
+                            // ✅ 安全的位置计算
+                            let x, y;
+                            
+                            switch(pagePosition) {
+                                case 'bottom-right':
+                                    x = width - marginRight;
+                                    y = marginBottom;
+                                    break;
+                                case 'bottom-center':
+                                    x = width / 2;
+                                    y = marginBottom;
+                                    break;
+                                case 'bottom-left':
+                                    x = marginRight;
+                                    y = marginBottom;
+                                    break;
+                                case 'top-center':
+                                    x = width / 2;
+                                    y = height - marginBottom;
+                                    break;
+                                case 'top-left':
+                                    x = marginRight;
+                                    y = height - marginBottom;
+                                    break;
+                                case 'top-right':
+                                    x = width - marginRight;
+                                    y = height - marginBottom;
+                                    break;
+                                default:
+                                    x = width - marginRight;
+                                    y = marginBottom;
+                            }
+                            
+                            // ✅ 安全的字体嵌入
+                            const font = await newPdfDoc.embedFont(fontFamily);
+                            
+                            // ✅ 安全的颜色转换
+                            const rgbColor = hexToRgb(fontColor);
+                            if (!rgbColor) {
+                                throw new Error('无效的颜色值');
+                            }
+                            
+                            // ✅ 添加页码
+                            currentPage.drawText(pageText, {
+                                x: x,
+                                y: y,
+                                size: fontSize,
+                                font: font,
+                                color: rgbColor,
+                                textAnchor: pagePosition.includes('center') ? 'middle' : 'end',
+                            });
+                            
+                            console.log(`✅ 第 ${i + 1} 页页码添加成功`);
                         }
-
-                        currentPage.drawText(pageText, {
-                            x: x,
-                            y: y,
-                            size: fontSize,
-                            font: await newPdfDoc.embedFont(fontFamily),
-                            color: hexToRgb(fontColor),
-                            textAnchor: pagePosition.includes('center') ? 'middle' : 'end',
-                        });
+                        
+                    } catch (pageError) {
+                        console.error(`❌ 处理第 ${i + 1} 页时出错:`, pageError);
+                        // 继续处理其他页面，而不是完全失败
+                        console.warn(`⚠️  跳过第 ${i + 1} 页，继续处理下一页`);
                     }
                 }
-
+                
+                console.log('生成PDF文件...');
                 const pdfBytes = await newPdfDoc.save();
+                console.log(`PDF生成成功，大小: ${pdfBytes.byteLength} bytes`);
+                
+                // ✅ 安全创建下载链接
                 const blob = new Blob([pdfBytes], { type: 'application/pdf' });
                 const url = URL.createObjectURL(blob);
-
-                document.getElementById('downloadBtn').href = url;
-                document.getElementById('downloadBtn').download = `带页码_${selectedFile.name}`;
-
-                loading.style.display = 'none';
-                result.style.display = 'block';
-
+                
+                const downloadBtn = document.getElementById('downloadBtn');
+                if (downloadBtn) {
+                    downloadBtn.href = url;
+                    downloadBtn.download = `带页码_${selectedFile.name}`;
+                }
+                
+                if (loading) loading.style.display = 'none';
+                if (result) result.style.display = 'block';
+                
+                console.log('=== 处理完成 ===');
+                
             } catch (error) {
-                console.error('处理失败:', error);
-                alert('处理PDF时出错：' + error.message);
-                loading.style.display = 'none';
+                console.error('❌ 处理过程失败:', error);
+                console.error('错误详情:', error.message);
+                console.error('错误堆栈:', error.stack);
+                
+                let errorMessage = '处理PDF时出错：\n';
+                
+                if (error.message.includes('font')) {
+                    errorMessage += '字体嵌入失败，请尝试使用其他字体';
+                } else if (error.message.includes('memory')) {
+                    errorMessage += '内存不足，请尝试处理较小的PDF文件';
+                } else if (error.message.includes('page')) {
+                    errorMessage += '页面处理失败，可能文件已损坏';
+                } else if (error.message.includes('color')) {
+                    errorMessage += '颜色设置错误，请检查颜色值';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                alert(errorMessage + '\n\n建议：\n1. 尝试其他PDF文件\n2. 减小文件大小\n3. 检查文件是否损坏\n4. 刷新页面重试');
+                
+                if (loading) loading.style.display = 'none';
             }
         });
 
+        // 更安全的颜色转换函数
         function hexToRgb(hex) {
+            if (!hex || typeof hex !== 'string') {
+                console.warn('⚠️  无效的颜色值，使用默认黑色');
+                return { r: 0, g: 0, b: 0 };
+            }
+            
             const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
             return result ? {
                 r: parseInt(result[1], 16) / 255,
                 g: parseInt(result[2], 16) / 255,
                 b: parseInt(result[3], 16) / 255,
-            } : { r: 0, g: 0, b: 0 };
+            } : { r: 0, g: 0, b: 0 }; // 默认黑色
         }
     </script>
 </body>
