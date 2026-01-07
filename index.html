@@ -6,7 +6,7 @@
 <title>PDF 加页码工具（含预览 + 中文字体）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <!-- ① 引入 fontkit -->
-<script src="https://cdn.jsdelivr.net/npm/fontkit@2.0.2/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fontkit@1.8.1/dist/fontkit.min.js"></script>
 <!-- ② 修复：把全局 fontkit 指向 pdf-lib 需要的变量 -->
 <script> window.fontkit = window.fontkit || fontkit; </script>
 <!-- ③ 引入 PDF.js 做预览 -->
@@ -329,3 +329,4 @@ function hexToRgb(hex) {
 </script>
 </body>
 </html>
+
