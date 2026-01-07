@@ -3,8 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PDF 加页码工具（含预览）</title>
+<title>PDF 加页码工具（含预览 + 中文字体）</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<!-- ① 引入 fontkit，供 pdf-lib 嵌入自定义字体 -->
+<script src="https://cdn.jsdelivr.net/npm/fontkit@2.0.2/lib/index.js"></script>
+<!-- ② 引入 PDF.js 做预览 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 /* ---- 通用布局 ---- */
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif; }
@@ -49,7 +53,7 @@ input[type="color"] { width: 44px; height: 36px; border: none; border-radius: 6p
 </head>
 <body>
 <div class="container">
-  <h1>PDF 加页码工具（含预览）</h1>
+  <h1>PDF 加页码工具（含预览 + 中文字体）</h1>
 
   <div class="row">
     <!-- ===== 左侧面板 ===== -->
@@ -258,6 +262,9 @@ document.getElementById('processBtn').addEventListener('click', async () => {
     const marginR    = parseFloat(document.getElementById('marginRight').value) * 28.35;
 
     const newDoc = await PDFLib.PDFDocument.create();
+    /* ****** 注册 fontkit ****** */
+    newDoc.registerFontkit(fontkit);
+
     const pages  = pdfDoc.getPages();
 
     for (let i = 0; i < pages.length; i++) {
@@ -318,8 +325,5 @@ function hexToRgb(hex) {
            : { r: 0, g: 0, b: 0 };
 }
 </script>
-
-<!-- 引入 PDF.js 专门做预览 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </body>
 </html>
