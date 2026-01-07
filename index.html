@@ -1,289 +1,325 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF加页码工具</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; 
-        }
-        .container { 
-            background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px; max-width: 600px; width: 100%; 
-        }
-        h1 { color: #333; text-align: center; margin-bottom: 30px; font-size: 2rem; }
-        .upload-area { 
-            border: 2px dashed #667eea; border-radius: 10px; padding: 40px; text-align: center;
-            margin-bottom: 30px; transition: all 0.3s ease; cursor: pointer; 
-        }
-        .upload-icon { font-size: 48px; color: #667eea; margin-bottom: 10px; }
-        input[type="file"] { display: none; }
-        .options { margin-bottom: 30px; }
-        .option-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; color: #555; font-weight: 500; }
-        select, input[type="number"] { 
-            width: 100%; padding: 10px 15px; border: 1px solid #ddd; 
-            border-radius: 8px; font-size: 16px; 
-        }
-        .font-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .color-picker-wrapper { display: flex; align-items: center; gap: 10px; }
-        input[type="color"] { width: 50px; height: 40px; border: none; border-radius: 8px; cursor: pointer; padding: 0; }
-        .position-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .position-btn { 
-            padding: 10px; border: 2px solid #ddd; border-radius: 8px; 
-            background: white; cursor: pointer; transition: all 0.3s ease; text-align: center; 
-        }
-        .position-btn.active { background: #667eea; color: white; border-color: #667eea; }
-        .process-btn { 
-            width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: 600;
-            cursor: pointer; transition: all 0.3s ease; 
-        }
-        .precise-position-control { background: #f8f9ff; padding: 15px; border-radius: 8px; margin-top: 10px; }
-        .loading, .result { display: none; text-align: center; margin-top: 20px; padding: 20px; background: #f8f9ff; border-radius: 10px; }
-        .download-btn { 
-            display: inline-block; padding: 12px 30px; background: #4caf50; color: white; 
-            text-decoration: none; border-radius: 8px; margin-top: 10px; 
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF 加页码工具（含预览）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<style>
+/* ---- 通用布局 ---- */
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif; }
+body { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.container { background: #fff; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,.12); width: 100%; max-width: 900px; padding: 30px; }
+h1 { text-align: center; margin-bottom: 25px; color: #333; }
+.row { display: flex; gap: 25px; }
+.left { flex: 1; min-width: 320px; }
+.right { flex: 2; }
+
+/* ---- 上传 ---- */
+.upload-box { border: 2px dashed #667eea; border-radius: 10px; padding: 35px; text-align: center; cursor: pointer; transition: .3s; }
+.upload-box.dragover { background: #f3f6ff; }
+#fileInput { display: none; }
+
+/* ---- 预览 ---- */
+.preview-box { margin-top: 20px; max-height: 400px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px; background: #fafafa; }
+.thumb { display: inline-block; margin: 6px; cursor: pointer; border: 2px solid transparent; transition: .2s; }
+.thumb:hover, .thumb.active { border-color: #667eea; }
+.thumb img { width: 110px; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+
+/* ---- 控制面板 ---- */
+.option-group { margin-bottom: 18px; }
+label { display: block; margin-bottom: 6px; font-weight: 500; color: #555; }
+input, select { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; }
+.font-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.color-wrapper { display: flex; align-items: center; gap: 10px; }
+input[type="color"] { width: 44px; height: 36px; border: none; border-radius: 6px; cursor: pointer; }
+.position-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.pos-btn { padding: 8px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; transition: .2s; text-align: center; font-size: 13px; }
+.pos-btn.active { background: #667eea; color: #fff; border-color: #667eea; }
+.precise { background: #f6f8ff; padding: 12px; border-radius: 6px; margin-top: 8px; }
+.precise .sub-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ---- 按钮 ---- */
+.process-btn { width: 100%; margin-top: 25px; padding: 14px; background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color: #fff; border: none; border-radius: 8px; font-size: 17px; font-weight: 600; cursor: pointer; transition: .3s; }
+.process-btn:hover { opacity: .9; }
+.loading { display: none; text-align: center; margin-top: 20px; }
+.result { display: none; text-align: center; margin-top: 20px; }
+.download-btn { display: inline-block; margin-top: 10px; padding: 10px 28px; background: #4caf50; color: #fff; border-radius: 6px; text-decoration: none; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>📄 PDF加页码工具</h1>
-        
-        <div class="upload-area" id="uploadArea">
-            <div class="upload-icon">📎</div>
-            <p>点击上传PDF文件或拖拽文件到此处</p>
-            <input type="file" id="fileInput" accept=".pdf">
-        </div>
+<div class="container">
+  <h1>PDF 加页码工具（含预览）</h1>
 
-        <div class="options" id="options" style="display: none;">
-            <div class="option-group">
-                <label for="pageNumberFormat">页码格式</label>
-                <select id="pageNumberFormat">
-                    <option value="1, 2, 3...">1, 2, 3...</option>
-                    <option value="第1页, 第2页, 第3页...">第1页, 第2页, 第3页...</option>
-                    <option value="Page 1, Page 2, Page 3...">Page 1, Page 2, Page 3...</option>
-                    <option value="- 1 -, - 2 -, - 3 -...">- 1 -, - 2 -, - 3 -...</option>
-                    <option value="0001, 0002, 0003...">0001, 0002, 0003...</option>
-                </select>
-            </div>
+  <div class="row">
+    <!-- ===== 左侧面板 ===== -->
+    <div class="left">
+      <div class="upload-box" id="uploadBox">
+        <div class="upload-icon">📎</div>
+        <p>点击或拖拽上传 PDF</p>
+        <input type="file" id="fileInput" accept=".pdf">
+      </div>
 
-            <div class="font-options">
-                <div class="option-group">
-                    <label for="fontSize">字体大小</label>
-                    <input type="number" id="fontSize" value="12" min="8" max="24">
-                </div>
-                <div class="option-group">
-                    <label for="fontFamily">字体</label>
-                    <select id="fontFamily">
-                        <option value="Helvetica">Helvetica</option>
-                        <option value="Times-Roman">Times New Roman</option>
-                        <option value="Courier">Courier</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="option-group">
-                <label>字体颜色</label>
-                <div class="color-picker-wrapper">
-                    <input type="color" id="fontColor" value="#000000">
-                    <span>选择颜色</span>
-                </div>
-            </div>
-
-            <div class="option-group">
-                <label>页码位置</label>
-                <div class="position-options">
-                    <button class="position-btn" data-position="bottom-center">底部居中</button>
-                    <button class="position-btn" data-position="bottom-left">底部左侧</button>
-                    <button class="position-btn active" data-position="bottom-right">底部右侧</button>
-                    <button class="position-btn" data-position="top-center">顶部居中</button>
-                    <button class="position-btn" data-position="top-left">顶部左侧</button>
-                    <button class="position-btn" data-position="top-right">顶部右侧</button>
-                </div>
-            </div>
-
-            <div class="option-group">
-                <label>精确位置设置</label>
-                <div class="precise-position-control">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <div>
-                            <label for="marginBottom">下边距 (cm)</label>
-                            <input type="number" id="marginBottom" value="1.06" step="0.01" min="0" max="5">
-                        </div>
-                        <div>
-                            <label for="marginRight">右边距 (cm)</label>
-                            <input type="number" id="marginRight" value="0.92" step="0.01" min="0" max="5">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="option-group">
-                <label for="startPage">起始页码</label>
-                <input type="number" id="startPage" value="1" min="1">
-            </div>
-
-            <div class="option-group">
-                <label for="startFromPage">从第几页开始添加</label>
-                <input type="number" id="startFromPage" value="1" min="1">
-            </div>
-
-            <button class="process-btn" id="processBtn">开始添加页码</button>
-        </div>
-
-        <div class="loading" id="loading">
-            <p>正在处理PDF文件...</p>
-        </div>
-
-        <div class="result" id="result">
-            <p>✅ PDF文件处理完成！</p>
-            <a href="#" class="download-btn" id="downloadBtn">下载带页码的PDF</a>
-        </div>
+      <!-- 预览 -->
+      <div class="preview-box" id="previewBox"></div>
     </div>
 
-    <script>
-        let pdfDoc = null;
-        let selectedFile = null;
-        let pagePosition = 'bottom-right';
+    <!-- ===== 右侧选项 ===== -->
+    <div class="right">
+      <div class="option-group">
+        <label>页码格式</label>
+        <select id="pageNumberFormat">
+          <option value="1,2,3…">1,2,3…</option>
+          <option value="第1页,第2页,第3页…">第1页,第2页,第3页…</option>
+          <option value="Page 1,Page 2,Page 3…">Page 1,Page 2,Page 3…</option>
+          <option value="- 1 -,- 2 -,- 3 -…">- 1 -,- 2 -,- 3 -…</option>
+          <option value="0001,0002,0003…">0001,0002,0003…</option>
+        </select>
+      </div>
 
-        /* ---------- 上传交互 ---------- */
-        const uploadArea  = document.getElementById('uploadArea');
-        const fileInput   = document.getElementById('fileInput');
-        const optionsArea = document.getElementById('options');
+      <div class="font-grid">
+        <div class="option-group">
+          <label>字体大小</label>
+          <input type="number" id="fontSize" value="12" min="8" max="36">
+        </div>
+        <div class="option-group">
+          <label>字体</label>
+          <select id="fontFamily">
+            <!-- 15 款常用字体（含中文） -->
+            <option value="Helvetica">Helvetica</option>
+            <option value="Times-Roman">Times New Roman</option>
+            <option value="Courier">Courier</option>
+            <option value="Helvetica-Bold">Helvetica Bold</option>
+            <option value="Times-Bold">Times Bold</option>
+            <option value="Courier-Bold">Courier Bold</option>
+            <option value="Helvetica-Oblique">Helvetica Oblique</option>
+            <option value="Times-Italic">Times Italic</option>
+            <option value="Courier-Oblique">Courier Oblique</option>
+            <option value="ZapfDingbats">ZapfDingbats</option>
+            <option value="Symbol">Symbol</option>
+            <option value="SimSun">宋体 (SimSun)</option>
+            <option value="SimHei">黑体 (SimHei)</option>
+            <option value="KaiTi">楷体 (KaiTi)</option>
+            <option value="FangSong">仿宋 (FangSong)</option>
+          </select>
+        </div>
+      </div>
 
-        uploadArea.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+      <div class="option-group">
+        <label>字体颜色</label>
+        <div class="color-wrapper">
+          <input type="color" id="fontColor" value="#000000">
+          <span>点击选择</span>
+        </div>
+      </div>
 
-        uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
-        uploadArea.addEventaver('dragleave', () => uploadArea.classList.remove('dragover'));
-        uploadArea.addEventListener('drop', e => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            handleFile(e.dataTransfer.files[0]);
-        });
+      <div class="option-group">
+        <label>页码位置</label>
+        <div class="position-grid">
+          <button class="pos-btn" data-pos="top-left">左上</button>
+          <button class="pos-btn" data-pos="top-center">中上</button>
+          <button class="pos-btn" data-pos="top-right">右上</button>
+          <button class="pos-btn" data-pos="bottom-left">左下</button>
+          <button class="pos-btn active" data-pos="bottom-right">右下</button>
+          <button class="pos-btn" data-pos="bottom-center">中下</button>
+        </div>
+      </div>
 
-        /* ---------- 位置按钮 ---------- */
-        document.querySelectorAll('.position-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.position-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                pagePosition = btn.dataset.position;
-            });
-        });
+      <div class="option-group">
+        <label>精确边距（cm）</label>
+        <div class="precise">
+          <div class="sub-row">
+            <div>
+              <label>下边距</label>
+              <input type="number" id="marginBottom" value="1.06" step="0.01" min="0" max="5">
+            </div>
+            <div>
+              <label>右边距</label>
+              <input type="number" id="marginRight" value="0.92" step="0.01" min="0" max="5">
+            </div>
+          </div>
+        </div>
+      </div>
 
-        /* ---------- 处理上传 ---------- */
-        async function handleFile(file) {
-            if (!file || file.type !== 'application/pdf') return alert('请选择有效的PDF文件！');
-            if (file.size > 50 * 1024 * 1024) return alert('文件过大，请限制在 50 MB 以内。');
+      <div class="option-group">
+        <label>起始页码</label>
+        <input type="number" id="startPage" value="1" min="1">
+      </div>
 
-            selectedFile = file;
-            uploadArea.innerHTML = `<p>已选择：${file.name}</p>`;
-            optionsArea.style.display = 'block';
+      <div class="option-group">
+        <label>从第几页开始添加</label>
+        <input type="number" id="startFromPage" value="1" min="1">
+      </div>
 
-            try {
-                const buf = await file.arrayBuffer();
-                pdfDoc = await PDFLib.PDFDocument.load(buf);
-            } catch (e) {
-                alert('PDF 加载失败，请确认文件未加密且未损坏。');
-                pdfDoc = null;
-            }
-        }
+      <button class="process-btn" id="processBtn">开始添加页码</button>
 
-        /* ---------- 主处理 ---------- */
-        document.getElementById('processBtn').addEventListener('click', async () => {
-            if (!pdfDoc) return alert('请先上传PDF！');
+      <div class="loading" id="loading">正在处理，请稍候…</div>
+      <div class="result"  id="result">
+        ✅ 完成！
+        <br><a href="#" class="download-btn" id="downloadBtn">下载带码 PDF</a>
+      </div>
+    </div>
+  </div>
+</div>
 
-            const loading = document.getElementById('loading');
-            const result  = document.getElementById('result');
-            loading.style.display = 'block';
-            result.style.display  = 'none';
+<script>
+/* =================  全局变量  ================= */
+let pdfDoc     = null;   // 原始 pdf-lib 文档
+let pdfBytes   = null;   // 最终生成用
+let pageCache  = [];     // 每页缩略图 <img>
+let selectedFile = null;
 
-            try {
-                const fmt          = document.getElementById('pageNumberFormat').value;
-                const fontSize     = parseInt(document.getElementById('fontSize').value);
-                const fontFamily   = document.getElementById('fontFamily').value;
-                const hexColor     = document.getElementById('fontColor').value;
-                const startPage    = parseInt(document.getElementById('startPage').value);
-                const startFrom    = parseInt(document.getElementById('startFromPage').value) - 1;
-                const marginBottom = parseFloat(document.getElementById('marginBottom').value) * 28.35;
-                const marginRight  = parseFloat(document.getElementById('marginRight').value) * 28.35;
+/* =================  上传 & 预览  ================= */
+const uploadBox = document.getElementById('uploadBox');
+const fileInput = document.getElementById('fileInput');
+const previewBox= document.getElementById('previewBox');
 
-                const newDoc = await PDFLib.PDFDocument.create();
-                const pages  = pdfDoc.getPages();
+uploadBox.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
 
-                for (let i = 0; i < pages.length; i++) {
-                    const [copiedPage] = await newDoc.copyPages(pdfDoc, [i]);
-                    newDoc.addPage(copiedPage);
+/* 拖拽 */
+uploadBox.addEventListener('dragover', e => { e.preventDefault(); uploadBox.classList.add('dragover'); });
+uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
+uploadBox.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadBox.classList.remove('dragover');
+  handleFile(e.dataTransfer.files[0]);
+});
 
-                    if (i >= startFrom) {
-                        const page    = newDoc.getPages()[i];
-                        const { width, height } = page.getSize();
-                        const num     = i + startPage - startFrom;
-                        let   text    = '';
+async function handleFile(file) {
+  if (!file || file.type !== 'application/pdf') return alert('请上传 PDF 文件');
+  if (file.size > 50 * 1024 * 1024) return alert('文件过大（>50 MB）');
 
-                        switch (fmt) {
-                            case '第1页, 第2页, 第3页...': text = `第${num}页`; break;
-                            case 'Page 1, Page 2, Page 3...': text = `Page ${num}`; break;
-                            case '- 1 -, - 2 -, - 3 -...': text = `- ${num} -`; break;
-                            case '0001, 0002, 0003...': text = String(num).padStart(4, '0'); break;
-                            default: text = String(num);
-                        }
+  selectedFile = file;
+  uploadBox.innerHTML = `<p>已加载：${file.name}</p>`;
+  previewBox.innerHTML = '生成预览中…';
 
-                        let x, y;
-                        switch (pagePosition) {
-                            case 'bottom-left':  x = marginRight;       y = marginBottom; break;
-                            case 'bottom-center':x = width / 2;         y = marginBottom; break;
-                            case 'bottom-right': x = width - marginRight; y = marginBottom; break;
-                            case 'top-left':     x = marginRight;       y = height - marginBottom; break;
-                            case 'top-center':   x = width / 2;         y = height - marginBottom; break;
-                            case 'top-right':    x = width - marginRight; y = height - marginBottom; break;
-                        }
+  /* 加载 pdf-lib 文档 */
+  const buf = await file.arrayBuffer();
+  pdfDoc  = await PDFLib.PDFDocument.load(buf);
 
-                        const font = await newDoc.embedFont(fontFamily);
-                        /* ****** 关键修复：用 PDFLib.rgb 包装颜色 ****** */
-                        const { r, g, b } = hexToRgb(hexColor);
-                        page.drawText(text, {
-                            x,
-                            y,
-                            size: fontSize,
-                            font,
-                            color: PDFLib.rgb(r, g, b)
-                        });
-                    }
-                }
+  /* 生成缩略图预览 */
+  await renderPreview(buf);
+}
 
-                const pdfBytes = await newDoc.save();
-                const blob     = new Blob([pdfBytes], { type: 'application/pdf' });
-                const url      = URL.createObjectURL(blob);
+/* 用原生 PDF.js 渲染缩略图（CDN） */
+async function renderPreview(buffer) {
+  const loadingTask = pdfjsLib.getDocument({ data: buffer });
+  const pdf         = await loadingTask.promise;
+  pageCache = [];
+  previewBox.innerHTML = '';
 
-                const downloadBtn = document.getElementById('downloadBtn');
-                downloadBtn.href        = url;
-                downloadBtn.download    = `带页码_${selectedFile.name}`;
-                loading.style.display   = 'none';
-                result.style.display    = 'block';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page   = await pdf.getPage(i);
+    const viewport= page.getViewport({ scale: 0.3 });
+    const canvas = document.createElement('canvas');
+    const ctx    = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width  = viewport.width;
+    await page.render({ canvasContext: ctx, viewport }).promise;
 
-            } catch (e) {
-                loading.style.display = 'none';
-                alert('处理失败：' + e.message);
-            }
-        });
+    const img  = document.createElement('img');
+    img.src    = canvas.toDataURL();
+    img.classList.add('thumb');
+    img.dataset.page = i;
+    img.title = `第 ${i} 页`;
+    pageCache.push(img);
+    previewBox.appendChild(img);
+  }
+}
 
-        /* ---------- 颜色助手 ---------- */
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result
-                ? { r: parseInt(result[1], 16) / 255,
-                    g: parseInt(result[2], 16) / 255,
-                    b: parseInt(result[3], 16) / 255 }
-                : { r: 0, g: 0, b: 0 };
-        }
-    </script>
+/* =================  位置按钮交互  ================= */
+let pagePos = 'bottom-right';
+document.querySelectorAll('.pos-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    pagePos = btn.dataset.pos;
+  });
+});
+
+/* =================  主处理  ================= */
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!pdfDoc) return alert('请先上传 PDF！');
+
+  const loading = document.getElementById('loading');
+  const result  = document.getElementById('result');
+  loading.style.display = 'block';
+  result.style.display  = 'none';
+
+  try {
+    const fmt        = document.getElementById('pageNumberFormat').value;
+    const fontSize   = parseInt(document.getElementById('fontSize').value);
+    const fontFamily = document.getElementById('fontFamily').value;
+    const hexColor   = document.getElementById('fontColor').value;
+    const startPage  = parseInt(document.getElementById('startPage').value);
+    const startFrom  = parseInt(document.getElementById('startFromPage').value) - 1;
+    const marginB    = parseFloat(document.getElementById('marginBottom').value) * 28.35; // cm→pt
+    const marginR    = parseFloat(document.getElementById('marginRight').value) * 28.35;
+
+    const newDoc = await PDFLib.PDFDocument.create();
+    const pages  = pdfDoc.getPages();
+
+    for (let i = 0; i < pages.length; i++) {
+      const [copiedPage] = await newDoc.copyPages(pdfDoc, [i]);
+      newDoc.addPage(copiedPage);
+      if (i < startFrom) continue;
+
+      const page   = newDoc.getPages()[i];
+      const { width, height } = page.getSize();
+      const num    = i + startPage - startFrom;
+      let   text   = '';
+      switch (fmt) {
+        case '第1页,第2页,第3页…': text = `第${num}页`; break;
+        case 'Page 1,Page 2,Page 3…': text = `Page ${num}`; break;
+        case '- 1 -,- 2 -,- 3 -…': text = `- ${num} -`; break;
+        case '0001,0002,0003…': text = String(num).padStart(4, '0'); break;
+        default: text = String(num);
+      }
+
+      /* 计算坐标 */
+      let x, y;
+      switch (pagePos) {
+        case 'top-left':      x = marginR;       y = height - marginB; break;
+        case 'top-center':    x = width / 2;     y = height - marginB; break;
+        case 'top-right':     x = width - marginR; y = height - marginB; break;
+        case 'bottom-left':   x = marginR;       y = marginB; break;
+        case 'bottom-center': x = width / 2;     y = marginB; break;
+        case 'bottom-right':  x = width - marginR; y = marginB; break;
+      }
+
+      const font    = await newDoc.embedFont(fontFamily);
+      const rgb     = hexToRgb(hexColor);
+      const options = { x, y, size: fontSize, font, color: PDFLib.rgb(rgb.r, rgb.g, rgb.b) };
+      if (pagePos.includes('center')) options.align = PDFLib.TextAlignment.Center;
+      page.drawText(text, options);
+    }
+
+    pdfBytes = await newDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url  = URL.createObjectURL(blob);
+    document.getElementById('downloadBtn').href     = url;
+    document.getElementById('downloadBtn').download = `带页码_${selectedFile.name}`;
+    loading.style.display = 'none';
+    result.style.display  = 'block';
+
+  } catch (e) {
+    loading.style.display = 'none';
+    alert('处理失败：' + e.message);
+  }
+});
+
+/* 颜色小工具 */
+function hexToRgb(hex) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return m ? { r: parseInt(m[1], 16) / 255,
+               g: parseInt(m[2], 16) / 255,
+               b: parseInt(m[3], 16) / 255 }
+           : { r: 0, g: 0, b: 0 };
+}
+</script>
+
+<!-- 引入 PDF.js 专门做预览 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </body>
 </html>
